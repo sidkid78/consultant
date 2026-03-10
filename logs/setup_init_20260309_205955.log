@@ -1,0 +1,24 @@
+[20:59:55] [INFO] ============================================================
+[20:59:55] [INFO] Starting codebase initialization
+[20:59:55] [INFO] Workspace: C:\Users\sidki\source\repos\consultant
+[20:59:55] [INFO] ============================================================
+[20:59:55] [INFO] 
+--- Python Dependencies ---
+[20:59:56] [INFO] No Python dependencies file found
+[20:59:56] [INFO] 
+--- Node Dependencies ---
+[20:59:56] [INFO] Running: npm install --quiet
+[21:03:22] [ERROR] ✗ Install Node dependencies: npm error Cannot read properties of null (reading 'matches')
+npm error A complete log of this run can be found in: C:\Users\sidki\AppData\Local\npm-cache\_logs\2026-03-10T02_00_02_544Z-debug-0.log
+
+[21:03:22] [INFO] 
+--- Environment File ---
+[21:03:22] [INFO] No .env.example found
+[21:03:22] [INFO] 
+--- Database Setup ---
+[21:03:22] [INFO] No database setup detected
+[21:03:22] [INFO] 
+============================================================
+[21:03:22] [WARNING] ⚠ Initialization completed with errors
+[21:03:22] [INFO] Log file: C:\Users\sidki\source\repos\consultant\logs\setup_init_20260309_205955.log
+[21:03:22] [INFO] ============================================================
