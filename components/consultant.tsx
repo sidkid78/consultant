@@ -101,7 +101,7 @@ async function generateReport(conversation: string) {
 
 const IMPACT_COLOR = { High: "#22c55e", Medium: "#f59e0b", Low: "#94a3b8" };
 const EFFORT_COLOR = { High: "#ef4444", Medium: "#f59e0b", Low: "#22c55e" };
-const CAT_ICONS = {
+const CAT_ICONS: Record<string, string> = {
   "Customer Experience": "◎",
   "Operations": "⟳",
   "Sales & Marketing": "◈",
@@ -123,9 +123,32 @@ function Badge({ label, color }: { label: string; color: string }) {
   );
 }
 
-function IntegrationCard({ item, index }: { item: any; index: number }) {
+interface IntegrationItem {
+  id?: string | number;
+  category?: string;
+  title?: string;
+  tagline?: string;
+  impact?: string;
+  effort?: string;
+  description?: string;
+  steps?: string[];
+  [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+
+interface ReportData {
+  company_summary?: string;
+  industry?: string;
+  integrations?: IntegrationItem[];
+  key_pain_points?: string[];
+  recommended_start?: string;
+  total_opportunity?: string;
+  quick_wins?: string[];
+  [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+
+function IntegrationCard({ item }: { item: IntegrationItem; index?: number }) {
   const [open, setOpen] = useState(false);
-  const icon = CAT_ICONS[item.category] || "◈";
+  const icon = CAT_ICONS[item.category || ""] || "◈";
   return (
     <div style={{
       background: "#fff", border: "1px solid #e8e0d4",
@@ -155,7 +178,7 @@ function IntegrationCard({ item, index }: { item: any; index: number }) {
           <div style={{ fontSize: "13px", color: "#6b5b3e" }}>{item.tagline}</div>
         </div>
         <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
-          <Badge label={`↑ ${item.impact}`} color={(IMPACT_COLOR as Record<string, string>)[item.impact] || "#94a3b8"} />
+          <Badge label={`↑ ${item.impact || "N/A"}`} color={(IMPACT_COLOR as Record<string, string>)[item.impact || ""] || "#94a3b8"} />
           <span style={{ fontSize: "18px", color: "#c9a84c", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "none" }}>∨</span>
         </div>
       </div>
@@ -172,7 +195,7 @@ function IntegrationCard({ item, index }: { item: any; index: number }) {
             </div>
           </div>
           <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "20px" }}>
-            {(item.tools_and_apis || []).map(t => (
+            {(item.tools_and_apis || []).map((t: string) => (
               <span key={t} style={{
                 background: "#1a1208", color: "#c9a84c",
                 fontSize: "11px", padding: "4px 10px", fontFamily: "monospace",
@@ -180,11 +203,11 @@ function IntegrationCard({ item, index }: { item: any; index: number }) {
             ))}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "20px" }}>
-            {[
-              ["Impact", item.impact, (IMPACT_COLOR as Record<string, string>)[item.impact]],
-              ["Effort", item.effort, (EFFORT_COLOR as Record<string, string>)[item.effort]],
-              ["Timeline", item.timeline, "#c9a84c"],
-            ].map(([label, val, color]) => (
+            {([
+              ["Impact", item.impact || "N/A", (IMPACT_COLOR as Record<string, string>)[item.impact || ""] || "#94a3b8"],
+              ["Effort", item.effort || "N/A", (EFFORT_COLOR as Record<string, string>)[item.effort || ""] || "#94a3b8"],
+              ["Timeline", (item.timeline as string) || "N/A", "#c9a84c"],
+            ] as [string, string, string][]).map(([label, val, color]) => (
               <div key={label} style={{ background: "#fff", border: "1px solid #e8e0d4", padding: "12px 16px" }}>
                 <div style={{ fontSize: "9px", color: "#9a8a6a", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "4px" }}>{label}</div>
                 <div style={{ fontSize: "14px", fontWeight: 700, color, fontFamily: "Georgia, serif" }}>{val}</div>
@@ -213,10 +236,10 @@ export default function AIIntegrationConsultant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [streamText, setStreamText] = useState("");
-  const [report, setReport] = useState<any>(null);
+  const [report, setReport] = useState<ReportData | null>(null);
   const [activeTab, setActiveTab] = useState("integrations");
-  const bottomRef = useRef(null);
-  const inputRef = useRef(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamText]);
 
@@ -272,6 +295,10 @@ export default function AIIntegrationConsultant() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
+  const integrations = (report?.integrations || []) as IntegrationItem[];
+  const highImpactCount = integrations.filter((i) => i?.impact === "High").length;
+  const quickTurnaroundCount = integrations.filter((i) => i?.effort === "Low").length;
+
   // ── WELCOME ─────────────────────────────────────────────
   if (phase === "welcome") return (
     <div style={{ minHeight: "100vh", background: "#f5f0e8", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Georgia, serif", padding: "40px 20px" }}>
@@ -301,8 +328,8 @@ export default function AIIntegrationConsultant() {
             boxShadow: "0 8px 30px rgba(26,18,8,0.3)",
             transition: "all 0.2s",
           }}
-          onMouseEnter={e => { e.target.style.background = "#2d2010"; e.target.style.transform = "translateY(-2px)"; }}
-          onMouseLeave={e => { e.target.style.background = "#1a1208"; e.target.style.transform = "none"; }}
+          onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { (e.target as HTMLButtonElement).style.background = "#2d2010"; (e.target as HTMLButtonElement).style.transform = "translateY(-2px)"; }}
+          onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { (e.target as HTMLButtonElement).style.background = "#1a1208"; (e.target as HTMLButtonElement).style.transform = "none"; }}
         >
           Start Free Assessment →
         </button>
@@ -412,7 +439,6 @@ export default function AIIntegrationConsultant() {
 
   // ── REPORT ───────────────────────────────────────────────
   if (phase === "report" && report) {
-    const tabs = ["integrations", "summary", "quickwins"];
     return (
       <div style={{ minHeight: "100vh", background: "#f5f0e8", fontFamily: "Georgia, serif" }}>
         {/* Header */}
@@ -456,18 +482,18 @@ export default function AIIntegrationConsultant() {
           {activeTab === "integrations" && (
             <div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "32px" }}>
-                {[
-                  ["Total Opportunities", report.integrations?.length || 0, "#1a1208"],
-                  ["High Impact", report.integrations?.filter(i => i.impact === "High").length || 0, "#22c55e"],
-                  ["Quick Turnaround", report.integrations?.filter(i => i.effort === "Low").length || 0, "#c9a84c"],
-                ].map(([label, val, color]) => (
+                {([
+                  ["Total Opportunities", integrations.length || 0, "#1a1208"],
+                  ["High Impact", highImpactCount || 0, "#22c55e"],
+                  ["Quick Turnaround", quickTurnaroundCount || 0, "#c9a84c"],
+                ] as [string, number, string][]).map(([label, val, color]) => (
                   <div key={label} style={{ background: "#fff", border: "1px solid #e0d8cc", padding: "20px 24px" }}>
                     <div style={{ fontSize: "32px", fontWeight: 400, color, marginBottom: "4px" }}>{val}</div>
                     <div style={{ fontSize: "11px", color: "#9a8a6a", textTransform: "uppercase", letterSpacing: "0.15em" }}>{label}</div>
                   </div>
                 ))}
               </div>
-              {(report.integrations || []).map((item, i) => <IntegrationCard key={item.id || i} item={item} index={i} />)}
+              {integrations.map((item, i) => <IntegrationCard key={String(item?.id || i)} item={item} index={i} />)}
             </div>
           )}
 
