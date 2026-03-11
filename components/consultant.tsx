@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 
 // ─── SYSTEM PROMPTS ──────────────────────────────────────────────────────────
 
-const DISCOVERY_SYSTEM = `You are an expert AI integration consultant. Your job is to deeply understand a company's operations, then recommend exactly which AI systems can be built and integrated into their business.
+const DISCOVERY_SYSTEM = `You are an expert AI Custom Integration Consultant. Your job is to deeply understand a company's operations, then recommend exactly which AI systems can be built and integrated into their business.
 
 DISCOVERY PHASE RULES:
 - Ask ONE focused question at a time
@@ -76,6 +76,50 @@ async function streamMessage(messages: Message[], systemPrompt: string, onChunk:
   return full;
 }
 
+function robustJsonParse(text: string) {
+  try {
+    // 1. Try direct parse (standard case)
+    return JSON.parse(text);
+  } catch {
+    console.warn("Standard JSON parse failed, attempting robust extraction...");
+    
+    // 2. Try to strip markdown code blocks if they exist
+    const cleanText = text.replace(/```json\n?|```/g, "").trim();
+    try {
+      return JSON.parse(cleanText);
+    } catch {
+      // 3. Try to extract the first/largest JSON object/array
+      const firstCurly = text.indexOf('{');
+      const lastCurly = text.lastIndexOf('}');
+      const firstBracket = text.indexOf('[');
+      const lastBracket = text.lastIndexOf(']');
+      
+      let start = -1;
+      let end = -1;
+      
+      if (firstCurly !== -1 && (firstBracket === -1 || firstCurly < firstBracket)) {
+        start = firstCurly;
+        end = lastCurly;
+      } else if (firstBracket !== -1) {
+        start = firstBracket;
+        end = lastBracket;
+      }
+
+      if (start !== -1 && end !== -1 && end > start) {
+        const extracted = text.substring(start, end + 1);
+        try {
+          return JSON.parse(extracted);
+        } catch (e3) {
+          console.error("Robust JSON extraction failed:", e3);
+        }
+      }
+      
+      console.error("All JSON parsing attempts failed for text:", text);
+      return null;
+    }
+  }
+}
+
 async function generateReport(conversation: string) {
   const response = await ai.models.generateContent({
     model: "gemini-3-pro-preview",
@@ -89,12 +133,7 @@ async function generateReport(conversation: string) {
   const text = response.text || "";
   if (!text) return null;
 
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    console.error("JSON parse failed:", e, "\nRaw text:", text);
-    return null;
-  }
+  return robustJsonParse(text);
 }
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -314,11 +353,12 @@ export default function AIIntegrationConsultant() {
           Find out exactly which<br />AI systems belong<br />in your business.
         </h1>
         <p style={{ fontSize: "15px", color: "#6b5b3e", lineHeight: 1.8, margin: "0 0 40px" }}>
-          We'll ask you a few questions about what your company does,
+          We&apos;ll ask you a few questions about what your company does,
           then generate a custom AI integration roadmap — specific
           tools, timelines, and first steps.
         </p>
         <button
+          title="Start Discovery"
           onClick={startDiscovery}
           style={{
             background: "#1a1208", color: "#c9a84c",
@@ -409,6 +449,7 @@ export default function AIIntegrationConsultant() {
             }}
           />
           <button
+            title="Send Message"
             onClick={sendMessage}
             disabled={loading || !input.trim()}
             style={{
@@ -454,6 +495,7 @@ export default function AIIntegrationConsultant() {
                 </div>
               </div>
               <button
+                title="New Assessment"
                 onClick={() => { setPhase("discovery"); setMessages([]); setReport(null); }}
                 style={{ background: "transparent", border: "1px solid #c9a84c40", color: "#c9a84c80", padding: "8px 16px", fontSize: "11px", cursor: "pointer", letterSpacing: "0.1em", fontFamily: "Georgia, serif", flexShrink: 0 }}
               >New Assessment</button>
