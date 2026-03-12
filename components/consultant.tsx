@@ -29,7 +29,7 @@ Return ONLY valid JSON (no markdown, no backticks, no preamble) in this exact st
       "category": "one of: Customer Experience | Operations | Sales & Marketing | Data & Analytics | Internal Tools | Content & Communications",
       "tagline": "One punchy sentence on the value",
       "what_it_does": "2-3 sentences describing exactly what this AI integration does for their specific business",
-      "how_we_build_it": "Specific technical approach: which AI APIs, how it connects to their existing tools, data flow",
+      "how_we_build_it": "Specific technical approach: which Gemini AI Models and google apis to use, how it connects to their existing tools, data flow. and remember this is a custom build in nextjs app router/supabase.",
       "tools_and_apis": ["Tool 1", "Tool 2", "Tool 3"],
       "impact": "High|Medium|Low",
       "effort": "High|Medium|Low",
